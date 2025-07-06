@@ -46,7 +46,7 @@ let aiAnalytics = fallbackAiAnalytics;
 
 // Try to import the real aiAnalytics
 try {
-  const aiAnalyticsModule = require('@/utils/aiAnalytics');
+  const aiAnalyticsModule = await import('../../../utils/aiAnalytics');
   aiAnalytics = aiAnalyticsModule.default || aiAnalyticsModule;
 } catch (error) {
   console.log('Using fallback aiAnalytics');
