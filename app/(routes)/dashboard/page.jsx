@@ -111,7 +111,7 @@ function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.fullName || 'User'}! 👋
+              Welcome to MoneyMap! 👋
         </h1>
             <p className="text-gray-600 mt-1">
               Loading your financial overview...
