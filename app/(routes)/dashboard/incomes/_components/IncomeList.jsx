@@ -34,7 +34,7 @@ export default function IncomeList() {
         method: 'DELETE',
       });
       if (response.ok) {
-        setIncomes(incomes.filter(income => income._id !== id));
+        setIncomes(incomes.filter(income => income.id !== id));
       }
     } catch (error) {
       console.error('Error deleting income:', error);
@@ -72,25 +72,25 @@ export default function IncomeList() {
       ) : (
         <div className="grid gap-4">
           {incomes.map((income) => (
-            <Card key={income._id} className="hover:shadow-md transition-shadow">
+            <Card key={income.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {income.source}
+                      {income.name || income.source}
                     </h3>
                     <p className="text-gray-600 mb-2">{income.description}</p>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>Amount: ₹{income.amount}</span>
-                      <span>Frequency: {income.frequency}</span>
-                      <span>Date: {new Date(income.date).toLocaleDateString()}</span>
+                      <span>Frequency: {income.frequency || 'Monthly'}</span>
+                      <span>Date: {income.date ? new Date(income.date).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(income._id)}
+                      onClick={() => handleDelete(income.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
