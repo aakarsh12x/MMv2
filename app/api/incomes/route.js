@@ -1,35 +1,22 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import { Income } from '@/utils/mongoSchemas';
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// MongoDB connection
-const connectDB = async () => {
-  try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log('MongoDB connected');
-    }
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
-
 export async function GET(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy') || 'default-user';
     
     console.log('Fetching incomes for:', createdBy);
     
-    const incomes = await Income.find({ createdBy })
+    const incomes = await db.collection(COLLECTIONS.INCOMES)
+      .find({ createdBy })
       .sort({ createdAt: -1 })
-      .lean();
+      .toArray();
     
     console.log('Incomes fetched:', incomes.length);
     return NextResponse.json(incomes);
@@ -44,7 +31,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const body = await request.json();
     console.log('Received income data:', body);
@@ -64,16 +51,19 @@ export async function POST(request) {
       frequency: frequency || 'monthly',
       date: date || new Date().toISOString().split('T')[0],
       description: description || '',
-      createdBy: createdBy || 'default-user'
+      createdBy: createdBy || 'default-user',
+      createdAt: new Date()
     };
     
     console.log('Creating income with data:', incomeData);
     
-    const income = new Income(incomeData);
-    const savedIncome = await income.save();
+    const result = await db.collection(COLLECTIONS.INCOMES).insertOne(incomeData);
     
-    console.log('Income created successfully:', savedIncome);
-    return NextResponse.json(savedIncome);
+    // Get the inserted document
+    const insertedIncome = await db.collection(COLLECTIONS.INCOMES).findOne({ _id: result.insertedId });
+    
+    console.log('Income created successfully:', insertedIncome);
+    return NextResponse.json(insertedIncome);
   } catch (error) {
     console.error('Error creating income:', error);
     return NextResponse.json({ 

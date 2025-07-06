@@ -1,96 +1,68 @@
-import mongoose from 'mongoose';
+import { MongoClient, ServerApiVersion } from 'mongodb';
 
-// Budget Schema
-const budgetSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💰'
-  },
-  createdBy: {
-    type: String,
-    required: true,
-    default: 'default-user'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+// MongoDB connection
+let client = null;
+let db = null;
+
+// Connect to MongoDB
+export async function connectToMongoDB() {
+  try {
+    if (!client) {
+      client = new MongoClient(process.env.MONGODB_URI, {
+        serverApi: {
+          version: ServerApiVersion.v1,
+          strict: true,
+          deprecationErrors: true,
+        }
+      });
+      
+      await client.connect();
+      console.log("Connected to MongoDB");
+      
+      // Use the "moneymap" database
+      db = client.db("moneymap");
+    }
+    
+    return { client, db };
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error);
+    throw error;
   }
-});
+}
 
-// Income Schema
-const incomeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  frequency: {
-    type: String,
-    default: 'monthly',
-    enum: ['daily', 'weekly', 'monthly', 'yearly']
-  },
-  date: {
-    type: String
-  },
-  description: {
-    type: String
-  },
-  icon: {
-    type: String,
-    default: '💵'
-  },
-  createdBy: {
-    type: String,
-    required: true,
-    default: 'default-user'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+// Collection names
+export const COLLECTIONS = {
+  BUDGETS: "budgets",
+  INCOMES: "incomes",
+  EXPENSES: "expenses"
+};
 
-// Expense Schema
-const expenseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  budgetId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Budget'
-  },
-  createdBy: {
-    type: String,
-    required: true,
-    default: 'default-user'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+// Budget schema definition (for documentation, not enforced by MongoDB)
+export const budgetSchema = {
+  name: String,
+  amount: String,
+  icon: String,
+  createdBy: String,
+  createdAt: Date
+};
 
-// Create models
-export const Budget = mongoose.models.Budget || mongoose.model('Budget', budgetSchema);
-export const Income = mongoose.models.Income || mongoose.model('Income', incomeSchema);
-export const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema); 
+// Income schema definition (for documentation, not enforced by MongoDB)
+export const incomeSchema = {
+  name: String,
+  amount: String,
+  frequency: String,
+  date: String,
+  description: String,
+  icon: String,
+  createdBy: String,
+  createdAt: Date
+};
+
+// Expense schema definition (for documentation, not enforced by MongoDB)
+export const expenseSchema = {
+  name: String,
+  amount: Number,
+  budgetId: String,
+  createdBy: String,
+  createdAt: Date
+}; 

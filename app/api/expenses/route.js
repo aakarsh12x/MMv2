@@ -1,39 +1,54 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import { Expense, Budget } from '@/utils/mongoSchemas';
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
+import { ObjectId } from 'mongodb';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// MongoDB connection
-const connectDB = async () => {
-  try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log('MongoDB connected');
-    }
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
-
 export async function GET(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy') || 'default-user';
     
     console.log('Fetching expenses for:', createdBy);
     
-    const expenses = await Expense.find({ createdBy })
-      .populate('budgetId', 'name icon')
+    // Get all expenses for the user
+    const expenses = await db.collection(COLLECTIONS.EXPENSES)
+      .find({ createdBy })
       .sort({ createdAt: -1 })
-      .lean();
+      .toArray();
     
-    console.log('Expenses fetched:', expenses.length);
-    return NextResponse.json(expenses);
+    // Get all budgets to enrich the expenses with budget details
+    const budgets = await db.collection(COLLECTIONS.BUDGETS)
+      .find({ createdBy })
+      .toArray();
+    
+    // Create a map of budget IDs to budget objects for quick lookup
+    const budgetMap = {};
+    budgets.forEach(budget => {
+      budgetMap[budget._id.toString()] = budget;
+    });
+    
+    // Enrich expenses with budget details
+    const enrichedExpenses = expenses.map(expense => {
+      if (expense.budgetId) {
+        const budgetIdStr = expense.budgetId.toString();
+        const budget = budgetMap[budgetIdStr];
+        if (budget) {
+          return {
+            ...expense,
+            budget_name: budget.name,
+            budget_icon: budget.icon
+          };
+        }
+      }
+      return expense;
+    });
+    
+    console.log('Expenses fetched:', enrichedExpenses.length);
+    return NextResponse.json(enrichedExpenses);
   } catch (error) {
     console.error('Error fetching expenses:', error);
     return NextResponse.json({ 
@@ -45,7 +60,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const body = await request.json();
     console.log('Received expense data:', body);
@@ -61,17 +76,20 @@ export async function POST(request) {
     const expenseData = {
       name: name,
       amount: parseFloat(amount) || 0,
-      budgetId: budgetId || null,
-      createdBy: createdBy || 'default-user'
+      budgetId: budgetId ? new ObjectId(budgetId) : null,
+      createdBy: createdBy || 'default-user',
+      createdAt: new Date()
     };
     
     console.log('Creating expense with data:', expenseData);
     
-    const expense = new Expense(expenseData);
-    const savedExpense = await expense.save();
+    const result = await db.collection(COLLECTIONS.EXPENSES).insertOne(expenseData);
     
-    console.log('Expense created successfully:', savedExpense);
-    return NextResponse.json(savedExpense);
+    // Get the inserted document
+    const insertedExpense = await db.collection(COLLECTIONS.EXPENSES).findOne({ _id: result.insertedId });
+    
+    console.log('Expense created successfully:', insertedExpense);
+    return NextResponse.json(insertedExpense);
   } catch (error) {
     console.error('Error creating expense:', error);
     return NextResponse.json({ 

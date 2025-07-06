@@ -1,35 +1,22 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import { Budget } from '@/utils/mongoSchemas';
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// MongoDB connection
-const connectDB = async () => {
-  try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log('MongoDB connected');
-    }
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
-  }
-};
-
 export async function GET(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy') || 'default-user';
     
     console.log('Fetching budgets for:', createdBy);
     
-    const budgets = await Budget.find({ createdBy })
+    const budgets = await db.collection(COLLECTIONS.BUDGETS)
+      .find({ createdBy })
       .sort({ createdAt: -1 })
-      .lean();
+      .toArray();
     
     console.log('Budgets fetched:', budgets.length);
     return NextResponse.json(budgets);
@@ -44,7 +31,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    await connectDB();
+    const { db } = await connectToMongoDB();
     
     const body = await request.json();
     console.log('Received budget data:', body);
@@ -61,16 +48,19 @@ export async function POST(request) {
       name: name,
       amount: amount.toString(),
       icon: icon || '💰',
-      createdBy: createdBy || 'default-user'
+      createdBy: createdBy || 'default-user',
+      createdAt: new Date()
     };
     
     console.log('Creating budget with data:', budgetData);
     
-    const budget = new Budget(budgetData);
-    const savedBudget = await budget.save();
+    const result = await db.collection(COLLECTIONS.BUDGETS).insertOne(budgetData);
     
-    console.log('Budget created successfully:', savedBudget);
-    return NextResponse.json(savedBudget);
+    // Get the inserted document
+    const insertedBudget = await db.collection(COLLECTIONS.BUDGETS).findOne({ _id: result.insertedId });
+    
+    console.log('Budget created successfully:', insertedBudget);
+    return NextResponse.json(insertedBudget);
   } catch (error) {
     console.error('Error creating budget:', error);
     return NextResponse.json({ 
