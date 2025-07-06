@@ -45,14 +45,10 @@ function Header() {
           {/* Logo and Brand */}
           <div className="flex items-center space-x-2 min-w-[180px]">
             <Link href="/" className="flex items-center space-x-2">
-              <Image 
-                src="/logo.svg" 
-                alt="MoneyMap Logo" 
-                width={32} 
-                height={32} 
-                className="h-8 w-8"
-                priority
-              />
+              {/* Simple text-based logo that always works */}
+              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg text-white font-bold text-sm shadow-sm">
+                MM
+              </div>
               <span className="text-2xl font-bold text-blue-700 tracking-tight select-none">MoneyMap</span>
             </Link>
           </div>
