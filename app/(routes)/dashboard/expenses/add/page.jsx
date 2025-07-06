@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUserId } from "@/utils/userContext";
 
 export default function AddExpensePage() {
   const router = useRouter();
@@ -28,19 +29,21 @@ export default function AddExpensePage() {
   const [budgets, setBudgets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const userId = getUserId();
+
   useEffect(() => {
     fetchBudgets();
   }, []);
 
   const fetchBudgets = async () => {
     try {
-      const response = await fetch('/api/budgets?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/budgets?createdBy=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setBudgets(data);
       }
     } catch (error) {
-      console.error('Error fetching budgets:', error);
+      console.error("Error fetching budgets:", error);
     }
   };
 
@@ -56,12 +59,12 @@ export default function AddExpensePage() {
         },
         body: JSON.stringify({
           ...formData,
-          createdBy: "aakarshshrey12@gmail.com",
+          createdBy: userId,
         }),
       });
 
       if (response.ok) {
-        router.push('/dashboard/expenses');
+        router.push("/dashboard/expenses");
       } else {
         console.error("Failed to create expense");
       }
@@ -102,20 +105,20 @@ export default function AddExpensePage() {
                 value={formData.title}
                 onChange={(e) => handleChange("title", e.target.value)}
                 placeholder="e.g., Grocery shopping"
-                  required
-                />
+                required
+              />
               </div>
 
               <div>
               <Label htmlFor="amount">Amount (₹)</Label>
               <Input
                 id="amount"
-                  type="number"
-                  value={formData.amount}
+                type="number"
+                value={formData.amount}
                 onChange={(e) => handleChange("amount", e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
+                placeholder="0.00"
+                required
+              />
               </div>
 
               <div>
@@ -125,7 +128,7 @@ export default function AddExpensePage() {
                 onValueChange={(value) => handleChange("category", value)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">General</SelectItem>
@@ -144,7 +147,7 @@ export default function AddExpensePage() {
             <div>
               <Label htmlFor="budgetId">Budget (Optional)</Label>
               <Select
-                  value={formData.budgetId}
+                value={formData.budgetId}
                 onValueChange={(value) => handleChange("budgetId", value)}
               >
                 <SelectTrigger>
@@ -180,12 +183,12 @@ export default function AddExpensePage() {
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Additional details about this expense"
                 rows={3}
-                />
+              />
               </div>
 
             <div className="flex gap-3 pt-4">
               <Button
-                  type="submit"
+                type="submit"
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >

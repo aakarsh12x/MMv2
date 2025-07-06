@@ -1,40 +1,26 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
+import { ObjectId } from 'mongodb';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
-
 export async function GET(request, { params }) {
   try {
     const { id } = params;
+    const { db } = await connectToMongoDB();
     
     if (!id) {
       return NextResponse.json({ error: 'Income ID is required' }, { status: 400 });
     }
     
-    const income = await db.execute(
-      sql`SELECT * FROM incomes WHERE id = ${id}`
-    );
+    const income = await db.collection(COLLECTIONS.INCOMES).findOne({ _id: new ObjectId(id) });
     
-    if (!income.rows.length) {
+    if (!income) {
       return NextResponse.json({ error: 'Income not found' }, { status: 404 });
     }
     
-    return NextResponse.json(income.rows[0]);
+    return NextResponse.json(income);
   } catch (error) {
     console.error('Error fetching income:', error);
     return NextResponse.json({ error: 'Failed to fetch income', details: error.message }, { status: 500 });
@@ -44,6 +30,7 @@ export async function GET(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
+    const { db } = await connectToMongoDB();
     
     if (!id) {
       return NextResponse.json({ error: 'Income ID is required' }, { status: 400 });
@@ -51,16 +38,14 @@ export async function DELETE(request, { params }) {
     
     console.log(`Attempting to delete income with ID: ${id}`);
     
-    const result = await db.execute(
-      sql`DELETE FROM incomes WHERE id = ${id} RETURNING *`
-    );
+    const result = await db.collection(COLLECTIONS.INCOMES).deleteOne({ _id: new ObjectId(id) });
     
-    if (!result.rows.length) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Income not found' }, { status: 404 });
     }
     
-    console.log('Income deleted successfully:', result.rows[0]);
-    return NextResponse.json({ message: 'Income deleted successfully', deletedIncome: result.rows[0] });
+    console.log('Income deleted successfully');
+    return NextResponse.json({ message: 'Income deleted successfully' });
   } catch (error) {
     console.error('Error deleting income:', error);
     return NextResponse.json({ error: 'Failed to delete income', details: error.message }, { status: 500 });
@@ -70,6 +55,7 @@ export async function DELETE(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { id } = params;
+    const { db } = await connectToMongoDB();
     const body = await request.json();
     
     if (!id) {
@@ -82,52 +68,31 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'At least one field to update is required' }, { status: 400 });
     }
     
-    // Build the SET clause dynamically based on provided fields
-    let setClause = [];
-    let parameters = [];
+    // Build the update object dynamically based on provided fields
+    const updateData = {};
     
-    if (name) {
-      setClause.push(`name = $${parameters.length + 1}`);
-      parameters.push(name);
-    }
+    if (name) updateData.name = name;
+    if (amount) updateData.amount = amount.toString();
+    if (frequency) updateData.frequency = frequency;
+    if (date) updateData.date = date;
+    if (description) updateData.description = description;
+    if (icon) updateData.icon = icon;
     
-    if (amount) {
-      setClause.push(`amount = $${parameters.length + 1}`);
-      parameters.push(amount);
-    }
+    updateData.updatedAt = new Date();
     
-    if (frequency) {
-      setClause.push(`frequency = $${parameters.length + 1}`);
-      parameters.push(frequency);
-    }
-    
-    if (date) {
-      setClause.push(`date = $${parameters.length + 1}`);
-      parameters.push(date);
-    }
-    
-    if (description) {
-      setClause.push(`description = $${parameters.length + 1}`);
-      parameters.push(description);
-    }
-    
-    if (icon) {
-      setClause.push(`icon = $${parameters.length + 1}`);
-      parameters.push(icon);
-    }
-    
-    parameters.push(id);
-    
-    const result = await db.execute(
-      sql`UPDATE incomes SET ${sql.raw(setClause.join(', '))} WHERE id = $${parameters.length} RETURNING *`,
-      ...parameters
+    const result = await db.collection(COLLECTIONS.INCOMES).updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
     );
     
-    if (!result.rows.length) {
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Income not found' }, { status: 404 });
     }
     
-    return NextResponse.json(result.rows[0]);
+    // Get the updated document
+    const updatedIncome = await db.collection(COLLECTIONS.INCOMES).findOne({ _id: new ObjectId(id) });
+    
+    return NextResponse.json(updatedIncome);
   } catch (error) {
     console.error('Error updating income:', error);
     return NextResponse.json({ error: 'Failed to update income', details: error.message }, { status: 500 });

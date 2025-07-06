@@ -66,8 +66,8 @@ function CardInfo({ budgetList, incomeList, isLoading }) {
 
     if (incomeList?.length > 0) {
       incomeList.forEach((element) => {
-        // Ensure proper number conversion
-        const incomeAmount = parseFloat(element.totalAmount) || 0;
+        // Ensure proper number conversion - use 'amount' field
+        const incomeAmount = parseFloat(element.amount) || 0;
         totalIncome_ = totalIncome_ + incomeAmount;
       });
     }

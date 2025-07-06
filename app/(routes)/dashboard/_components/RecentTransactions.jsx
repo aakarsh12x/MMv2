@@ -12,7 +12,7 @@ function RecentTransactions({ expensesList = [], incomeList = [] }) {
 
   // Combine and sort transactions by date
   const allTransactions = [
-    ...expensesList.map(expense => ({
+    ...(expensesList || []).map(expense => ({
       id: expense._id || expense.id,
       type: 'expense',
       name: expense.name,
@@ -20,7 +20,7 @@ function RecentTransactions({ expensesList = [], incomeList = [] }) {
       createdAt: expense.createdAt,
       category: expense.budgetId?.name || 'Other',
     })),
-    ...incomeList.map(income => ({
+    ...(incomeList || []).map(income => ({
       id: income._id || income.id,
       type: 'income',
       name: income.name,

@@ -1,12 +1,18 @@
 "use client"
 import { useState, useEffect } from 'react'
+import { Trash2, Edit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { getUserId } from "@/utils/userContext";
 import BudgetItem from './BudgetItem'
 import CreateBudget from './CreateBudget'
 
-export default function BudgetList() {
-  const [budgetlist, setBudgetlist] = useState([]);
+export default function BudgetList({ onBudgetUpdated }) {
+  const [budgets, setBudgets] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const userId = getUserId();
 
   useEffect(() => {
     fetchBudgets();
@@ -14,10 +20,10 @@ export default function BudgetList() {
 
   const fetchBudgets = async () => {
     try {
-      const response = await fetch('/api/budgets?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/budgets?createdBy=${userId}`);
       if (response.ok) {
         const data = await response.json();
-        setBudgetlist(data);
+        setBudgets(data);
       }
     } catch (error) {
       console.error('Error fetching budgets:', error);
@@ -55,8 +61,8 @@ export default function BudgetList() {
             fetchBudgets();
           }}
         />
-        {budgetlist?.length > 0
-          ? budgetlist.map((budget, index) => (
+        {budgets?.length > 0
+          ? budgets.map((budget, index) => (
               <BudgetItem budget={budget} key={index} />
             ))
           : [1, 2, 3, 4, 5].map((item, index) => (

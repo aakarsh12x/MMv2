@@ -23,18 +23,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getUserId } from "@/utils/userContext";
 
 export default function DataManagement() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
+  const userId = getUserId();
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch('/api/data/export?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/data/export?createdBy=${userId}`);
       if (response.ok) {
-        const data = await response.blob();
-        const url = window.URL.createObjectURL(data);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `moneymap-data-${new Date().toISOString().split('T')[0]}.json`;
@@ -42,9 +45,12 @@ export default function DataManagement() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+      } else {
+        alert('Failed to export data');
       }
     } catch (error) {
       console.error('Error exporting data:', error);
+      alert('Error exporting data');
     } finally {
       setIsExporting(false);
     }
@@ -58,9 +64,9 @@ export default function DataManagement() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('createdBy', 'aakarshshrey12@gmail.com');
+      formData.append('createdBy', userId);
 
-      const response = await fetch('/api/data/import', {
+      const response = await fetch('/api/data/bulk-import', {
         method: 'POST',
         body: formData,
       });
@@ -73,7 +79,7 @@ export default function DataManagement() {
       }
     } catch (error) {
       console.error('Error importing data:', error);
-      alert('Error importing data. Please try again.');
+      alert('Error importing data');
     } finally {
       setIsImporting(false);
     }

@@ -65,11 +65,13 @@ export async function POST(request) {
     const body = await request.json();
     console.log('Received expense data:', body);
     
-    const { name, amount, budgetId, createdBy } = body;
+    // Handle both 'name' and 'title' fields for backward compatibility
+    const name = body.name || body.title;
+    const { amount, budgetId, createdBy } = body;
     
     if (!name || !amount) {
       return NextResponse.json({ 
-        error: 'Name and amount are required' 
+        error: 'Name/title and amount are required' 
       }, { status: 400 });
     }
     

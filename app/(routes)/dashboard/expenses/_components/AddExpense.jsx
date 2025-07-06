@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getUserId } from "@/utils/userContext";
 
 export default function AddExpense({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ export default function AddExpense({ isOpen, onClose, onSuccess }) {
   const [budgets, setBudgets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  const userId = getUserId();
+
   useEffect(() => {
     if (isOpen) {
       fetchBudgets();
@@ -33,13 +36,13 @@ export default function AddExpense({ isOpen, onClose, onSuccess }) {
 
   const fetchBudgets = async () => {
     try {
-      const response = await fetch('/api/budgets?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/budgets?createdBy=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setBudgets(data);
       }
     } catch (error) {
-      console.error('Error fetching budgets:', error);
+      console.error("Error fetching budgets:", error);
     }
   };
 
@@ -55,7 +58,7 @@ export default function AddExpense({ isOpen, onClose, onSuccess }) {
         },
         body: JSON.stringify({
           ...formData,
-          createdBy: "aakarshshrey12@gmail.com",
+          createdBy: userId,
         }),
       });
 

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getUserId } from "@/utils/userContext";
 
 export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -22,6 +23,8 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
     description: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const userId = getUserId();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
         },
         body: JSON.stringify({
           ...formData,
-          createdBy: "aakarshshrey12@gmail.com",
+          createdBy: userId,
         }),
       });
 

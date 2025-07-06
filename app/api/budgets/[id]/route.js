@@ -1,23 +1,14 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
+import { ObjectId } from 'mongodb';
 
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
+// Force dynamic to ensure the API route is not statically optimized
+export const dynamic = 'force-dynamic';
 
 export async function PUT(request, { params }) {
   try {
     const { id } = params;
+    const { db } = await connectToMongoDB();
     const body = await request.json();
     const { name, amount, icon } = body;
     
@@ -25,15 +16,26 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const result = await db.execute(
-      sql`UPDATE budgets SET name = ${name}, amount = ${amount}, icon = ${icon || '💰'} WHERE id = ${id} RETURNING *`
+    const result = await db.collection(COLLECTIONS.BUDGETS).updateOne(
+      { _id: new ObjectId(id) },
+      { 
+        $set: { 
+          name, 
+          amount: amount.toString(), 
+          icon: icon || '💰',
+          updatedAt: new Date()
+        } 
+      }
     );
     
-    if (result.rows.length === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 });
     }
     
-    return NextResponse.json(result.rows[0]);
+    // Get the updated document
+    const updatedBudget = await db.collection(COLLECTIONS.BUDGETS).findOne({ _id: new ObjectId(id) });
+    
+    return NextResponse.json(updatedBudget);
   } catch (error) {
     console.error('Error updating budget:', error);
     return NextResponse.json({ error: 'Failed to update budget' }, { status: 500 });
@@ -43,12 +45,11 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
+    const { db } = await connectToMongoDB();
     
-    const result = await db.execute(
-      sql`DELETE FROM budgets WHERE id = ${id} RETURNING *`
-    );
+    const result = await db.collection(COLLECTIONS.BUDGETS).deleteOne({ _id: new ObjectId(id) });
     
-    if (result.rows.length === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 });
     }
     

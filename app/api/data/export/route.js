@@ -1,25 +1,12 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
-
 export async function GET(request) {
   try {
+    const { db } = await connectToMongoDB();
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy');
     
@@ -29,18 +16,32 @@ export async function GET(request) {
     
     // Fetch all data for the user
     const [budgets, expenses, incomes] = await Promise.all([
-      db.execute(sql`SELECT * FROM budgets WHERE "createdBy" = ${createdBy} ORDER BY "createdAt" DESC`),
-      db.execute(sql`SELECT e.*, b.name as budget_name FROM expenses e LEFT JOIN budgets b ON e."budgetId" = b.id WHERE e."createdBy" = ${createdBy} ORDER BY e."createdAt" DESC`),
-      db.execute(sql`SELECT * FROM incomes WHERE "createdBy" = ${createdBy} ORDER BY "createdAt" DESC`)
+      db.collection(COLLECTIONS.BUDGETS).find({ createdBy }).sort({ createdAt: -1 }).toArray(),
+      db.collection(COLLECTIONS.EXPENSES).find({ createdBy }).sort({ createdAt: -1 }).toArray(),
+      db.collection(COLLECTIONS.INCOMES).find({ createdBy }).sort({ createdAt: -1 }).toArray()
     ]);
+    
+    // Enrich expenses with budget details
+    const enrichedExpenses = await Promise.all(
+      expenses.map(async (expense) => {
+        if (expense.budgetId) {
+          const budget = await db.collection(COLLECTIONS.BUDGETS).findOne({ _id: expense.budgetId });
+          return {
+            ...expense,
+            budget_name: budget ? budget.name : null
+          };
+        }
+        return expense;
+      })
+    );
     
     const exportData = {
       exportDate: new Date().toISOString(),
       user: createdBy,
       data: {
-        budgets: budgets.rows,
-        expenses: expenses.rows,
-        incomes: incomes.rows
+        budgets,
+        expenses: enrichedExpenses,
+        incomes
       }
     };
     

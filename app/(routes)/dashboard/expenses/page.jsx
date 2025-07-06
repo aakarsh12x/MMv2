@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import AddExpense from './_components/AddExpense';
+import { getUserId } from '@/utils/userContext';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -21,13 +22,15 @@ export default function ExpensesPage() {
     averageExpense: 0
   });
 
+  const userId = getUserId();
+
   useEffect(() => {
     fetchExpenses();
   }, []);
 
   const fetchExpenses = async () => {
     try {
-      const response = await fetch('/api/expenses?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/expenses?createdBy=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setExpenses(data);
@@ -102,7 +105,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Expenses Table */}
-      <ExpenseListTable expenses={expenses} onExpenseUpdated={fetchExpenses} />
+      <ExpenseListTable expensesList={expenses} refreshData={fetchExpenses} />
 
       <AddExpense
         isOpen={isAddModalOpen}

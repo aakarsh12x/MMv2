@@ -8,6 +8,7 @@ import QuickStats from "./_components/QuickStats";
 import RecentTransactions from "./_components/RecentTransactions";
 import QuickActions from "./_components/QuickActions";
 import SpendingAnalytics from "./_components/SpendingAnalytics";
+import { getUserId } from '@/utils/userContext';
 
 function Dashboard() {
   const [mounted, setMounted] = useState(false);
@@ -16,6 +17,13 @@ function Dashboard() {
   const [incomeList, setIncomeList] = useState([]);
   const [expensesList, setExpensesList] = useState([]);
   const [error, setError] = useState(null);
+  const [totals, setTotals] = useState({
+    totalBudget: 0,
+    totalSpent: 0,
+    totalIncome: 0,
+  });
+
+  const userId = getUserId();
 
   // Get current date
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -36,116 +44,45 @@ function Dashboard() {
   const getBudgetList = async () => {
     try {
       console.log('Fetching budgets...');
-      // Get budgets for the default user
-      const budgetResponse = await fetch(`/api/budgets?createdBy=default-user`);
-      if (!budgetResponse.ok) {
-        console.error('Budget response not ok:', budgetResponse.status);
-        // Use mock data if API fails
-        const mockBudgets = [
-          {
-            _id: '1',
-            name: 'Food & Dining',
-            amount: '500',
-            icon: '🍕',
-            totalSpend: 320,
-            totalItem: 12
-          },
-          {
-            _id: '2',
-            name: 'Transportation',
-            amount: '200',
-            icon: '🚗',
-            totalSpend: 150,
-            totalItem: 8
-          }
-        ];
-        setBudgetList(mockBudgets);
-        setExpensesList([]);
-        getIncomeList();
-        return;
-      }
-      const budgets = await budgetResponse.json();
-      console.log('Budgets fetched:', budgets);
-
-      // Get expenses for the default user
-      const expenseResponse = await fetch(`/api/expenses?createdBy=default-user`);
-      if (!expenseResponse.ok) {
-        console.error('Expense response not ok:', expenseResponse.status);
-        // Use mock expenses if API fails
-        const mockExpenses = [
-          {
-            _id: '1',
-            name: 'Grocery Shopping',
-            amount: 120,
-            budgetId: { _id: '1' },
-            createdAt: new Date()
-          },
-          {
-            _id: '2',
-            name: 'Gas',
-            amount: 45,
-            budgetId: { _id: '2' },
-            createdAt: new Date()
-          }
-        ];
-        setExpensesList(mockExpenses);
-        getIncomeList();
-        return;
-      }
-      const allExpenses = await expenseResponse.json();
-      console.log('Expenses fetched:', allExpenses);
-
-      // Calculate expenses for each budget
-      const budgetsWithExpenses = budgets.map(budget => {
-        const budgetExpenses = allExpenses.filter(expense => {
-          // Handle MongoDB _id
-          const expenseBudgetId = expense.budgetId?._id || expense.budgetId;
-          const budgetId = budget._id;
-          return expenseBudgetId === budgetId;
-        });
-        
-        const totalSpend = budgetExpenses.reduce((sum, expense) => {
-          const amount = parseFloat(expense.amount) || 0;
-          return sum + amount;
-        }, 0);
-        const totalItem = budgetExpenses.length;
-        
-        return {
-          ...budget,
-          totalSpend,
-          totalItem
-        };
-      });
+      const response = await fetch(`/api/budgets?createdBy=${userId}`);
       
-      setBudgetList(budgetsWithExpenses);
-      setExpensesList(allExpenses);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Budgets fetched:', data);
+      setBudgetList(data);
+      getExpensesList();
       getIncomeList();
     } catch (error) {
-      console.error("Error fetching budget list:", error);
-      // Use mock data on error
-      const mockBudgets = [
-        {
-          _id: '1',
-          name: 'Food & Dining',
-          amount: '500',
-          icon: '🍕',
-          totalSpend: 320,
-          totalItem: 12
-        },
-        {
-          _id: '2',
-          name: 'Transportation',
-          amount: '200',
-          icon: '🚗',
-          totalSpend: 150,
-          totalItem: 8
-        }
-      ];
-      setBudgetList(mockBudgets);
+      console.error('Error fetching budgets:', error);
+      setBudgetList([]);
       setExpensesList([]);
       setError('Database connection failed. Showing mock data.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Get Expenses list
+   */
+  const getExpensesList = async () => {
+    try {
+      console.log('Fetching expenses...');
+      const response = await fetch(`/api/expenses?createdBy=${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Expenses fetched:', data);
+      setExpensesList(data);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      setExpensesList([]);
     }
   };
 
@@ -155,67 +92,25 @@ function Dashboard() {
   const getIncomeList = async () => {
     try {
       console.log('Fetching incomes...');
-      // Get incomes for the default user
-      const response = await fetch(`/api/incomes?createdBy=default-user`);
+      const response = await fetch(`/api/incomes?createdBy=${userId}`);
+      
       if (!response.ok) {
-        console.error('Income response not ok:', response.status);
-        // Use mock incomes if API fails
-        const mockIncomes = [
-          {
-            _id: '1',
-            name: 'Salary',
-            amount: '5000',
-            frequency: 'monthly',
-            totalAmount: 5000
-          },
-          {
-            _id: '2',
-            name: 'Freelance',
-            amount: '1500',
-            frequency: 'monthly',
-            totalAmount: 1500
-          }
-        ];
-        setIncomeList(mockIncomes);
-        return;
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const incomes = await response.json();
-      console.log('Incomes fetched:', incomes);
-
-      // Calculate total amount for each income
-      const incomesWithTotals = incomes.map(income => ({
-        ...income,
-        totalAmount: parseFloat(income.amount || 0)
-      }));
-
-      setIncomeList(incomesWithTotals);
+      
+      const data = await response.json();
+      console.log('Incomes fetched:', data);
+      setIncomeList(data);
     } catch (error) {
-      console.error("Error fetching income list:", error);
-      // Use mock data on error
-      const mockIncomes = [
-        {
-          _id: '1',
-          name: 'Salary',
-          amount: '5000',
-          frequency: 'monthly',
-          totalAmount: 5000
-        },
-        {
-          _id: '2',
-          name: 'Freelance',
-          amount: '1500',
-          frequency: 'monthly',
-          totalAmount: 1500
-        }
-      ];
-      setIncomeList(mockIncomes);
+      console.error('Error fetching incomes:', error);
+      setIncomeList([]);
     }
   };
 
   // Calculate totals for components
   const totalBudget = budgetList?.reduce((sum, budget) => sum + Number(budget.amount || 0), 0) || 0;
-  const totalSpend = budgetList?.reduce((sum, budget) => sum + (budget.totalSpend || 0), 0) || 0;
-  const totalIncome = incomeList?.reduce((sum, income) => sum + (income.totalAmount || 0), 0) || 0;
+  const totalSpend = expensesList?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+  const totalIncome = incomeList?.reduce((sum, income) => sum + Number(income.amount || 0), 0) || 0;
 
   console.log('Dashboard totals:', { totalBudget, totalSpend, totalIncome });
 

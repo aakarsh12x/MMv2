@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getUserId } from "@/utils/userContext";
 
 export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -21,6 +22,8 @@ export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
     description: budget?.description || "",
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const userId = getUserId();
 
   useEffect(() => {
     if (budget) {
@@ -45,7 +48,7 @@ export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
         },
         body: JSON.stringify({
           ...formData,
-          createdBy: "aakarshshrey12@gmail.com",
+          createdBy: userId,
         }),
       });
 

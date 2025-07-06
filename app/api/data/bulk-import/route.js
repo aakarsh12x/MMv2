@@ -1,22 +1,13 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
+import { ObjectId } from 'mongodb';
 
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
+// Force dynamic to ensure the API route is not statically optimized
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
+    const { db } = await connectToMongoDB();
     const body = await request.json();
     const { budgets, expenses, incomes, createdBy } = body;
     
@@ -33,36 +24,54 @@ export async function POST(request) {
     // Import budgets
     if (budgets && budgets.length > 0) {
       for (const budget of budgets) {
-        const result = await db.execute(
-          sql`INSERT INTO budgets (name, amount, icon, "createdBy", "createdAt") 
-              VALUES (${budget.name}, ${budget.amount}, ${budget.icon || '💰'}, ${createdBy}, NOW())
-              RETURNING *`
-        );
-        results.budgets.push(result.rows[0]);
+        const budgetData = {
+          name: budget.name,
+          amount: budget.amount.toString(),
+          icon: budget.icon || '💰',
+          createdBy,
+          createdAt: new Date()
+        };
+        
+        const result = await db.collection(COLLECTIONS.BUDGETS).insertOne(budgetData);
+        const insertedBudget = await db.collection(COLLECTIONS.BUDGETS).findOne({ _id: result.insertedId });
+        results.budgets.push(insertedBudget);
       }
     }
     
     // Import incomes
     if (incomes && incomes.length > 0) {
       for (const income of incomes) {
-        const result = await db.execute(
-          sql`INSERT INTO incomes (name, amount, icon, "createdBy", "createdAt") 
-              VALUES (${income.name}, ${income.amount}, ${income.icon || '💵'}, ${createdBy}, NOW())
-              RETURNING *`
-        );
-        results.incomes.push(result.rows[0]);
+        const incomeData = {
+          name: income.name,
+          amount: income.amount.toString(),
+          icon: income.icon || '💵',
+          frequency: income.frequency || 'monthly',
+          date: income.date || new Date().toISOString().split('T')[0],
+          description: income.description || '',
+          createdBy,
+          createdAt: new Date()
+        };
+        
+        const result = await db.collection(COLLECTIONS.INCOMES).insertOne(incomeData);
+        const insertedIncome = await db.collection(COLLECTIONS.INCOMES).findOne({ _id: result.insertedId });
+        results.incomes.push(insertedIncome);
       }
     }
     
     // Import expenses
     if (expenses && expenses.length > 0) {
       for (const expense of expenses) {
-        const result = await db.execute(
-          sql`INSERT INTO expenses (name, amount, "budgetId", "createdBy", "createdAt") 
-              VALUES (${expense.name}, ${expense.amount}, ${expense.budgetId || null}, ${createdBy}, NOW())
-              RETURNING *`
-        );
-        results.expenses.push(result.rows[0]);
+        const expenseData = {
+          name: expense.name,
+          amount: parseFloat(expense.amount) || 0,
+          budgetId: expense.budgetId ? new ObjectId(expense.budgetId) : null,
+          createdBy,
+          createdAt: new Date()
+        };
+        
+        const result = await db.collection(COLLECTIONS.EXPENSES).insertOne(expenseData);
+        const insertedExpense = await db.collection(COLLECTIONS.EXPENSES).findOne({ _id: result.insertedId });
+        results.expenses.push(insertedExpense);
       }
     }
     

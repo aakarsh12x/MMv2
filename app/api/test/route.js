@@ -1,53 +1,40 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
+import { connectToMongoDB, COLLECTIONS } from '@/utils/mongoSchemas';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
-
 export async function GET() {
   try {
-    console.log('Testing database connections...');
+    console.log('Testing MongoDB connections...');
+    const { db } = await connectToMongoDB();
     
-    // Test budgets table
-    const budgets = await db.execute(sql`SELECT COUNT(*) as count FROM budgets`);
-    console.log('Budgets count:', budgets.rows[0]?.count);
+    // Test budgets collection
+    const budgetsCount = await db.collection(COLLECTIONS.BUDGETS).countDocuments();
+    console.log('Budgets count:', budgetsCount);
     
-    // Test incomes table
-    const incomes = await db.execute(sql`SELECT COUNT(*) as count FROM incomes`);
-    console.log('Incomes count:', incomes.rows[0]?.count);
+    // Test incomes collection
+    const incomesCount = await db.collection(COLLECTIONS.INCOMES).countDocuments();
+    console.log('Incomes count:', incomesCount);
     
-    // Test expenses table
-    const expenses = await db.execute(sql`SELECT COUNT(*) as count FROM expenses`);
-    console.log('Expenses count:', expenses.rows[0]?.count);
+    // Test expenses collection
+    const expensesCount = await db.collection(COLLECTIONS.EXPENSES).countDocuments();
+    console.log('Expenses count:', expensesCount);
     
     return NextResponse.json({
       success: true,
-      message: 'All database connections working',
+      message: 'All MongoDB connections working',
       data: {
-        budgets: budgets.rows[0]?.count || 0,
-        incomes: incomes.rows[0]?.count || 0,
-        expenses: expenses.rows[0]?.count || 0
+        budgets: budgetsCount,
+        incomes: incomesCount,
+        expenses: expensesCount
       }
     });
   } catch (error) {
-    console.error('Database test failed:', error);
+    console.error('MongoDB test failed:', error);
     return NextResponse.json({ 
       success: false,
-      error: 'Database test failed', 
+      error: 'MongoDB test failed', 
       details: error.message 
     }, { status: 500 });
   }

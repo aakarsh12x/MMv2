@@ -4,11 +4,14 @@ import { Trash2, Edit, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CreateIncomes from "./CreateIncomes";
+import { getUserId } from "@/utils/userContext";
 
-export default function IncomeList() {
+export default function IncomeList({ onIncomeUpdated }) {
   const [incomes, setIncomes] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const userId = getUserId();
 
   useEffect(() => {
     fetchIncomes();
@@ -16,7 +19,7 @@ export default function IncomeList() {
 
   const fetchIncomes = async () => {
     try {
-      const response = await fetch('/api/incomes?createdBy=aakarshshrey12@gmail.com');
+      const response = await fetch(`/api/incomes?createdBy=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setIncomes(data);
