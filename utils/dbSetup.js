@@ -36,6 +36,9 @@ export async function setupDatabase() {
         id SERIAL PRIMARY KEY,
         name VARCHAR NOT NULL,
         amount VARCHAR NOT NULL,
+        frequency VARCHAR DEFAULT 'monthly',
+        date VARCHAR,
+        description TEXT,
         icon VARCHAR,
         "createdBy" VARCHAR NOT NULL,
         "createdAt" TIMESTAMP DEFAULT NOW()

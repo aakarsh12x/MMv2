@@ -15,6 +15,9 @@ if (!DATABASE_URL) {
 const sqlClient = neon(DATABASE_URL);
 const db = drizzle(sqlClient);
 
+// Force dynamic to ensure the API route is not statically optimized
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -36,22 +39,34 @@ export async function POST(request) {
     const body = await request.json();
     console.log('Received income data:', body);
     
-    const { name, amount, icon, createdBy } = body;
+    // Map the form fields to database fields
+    const { source: name, amount, frequency, date, description, createdBy } = body;
     
     if (!name || !amount) {
       console.error('Missing required fields:', { name, amount });
       return NextResponse.json({ 
         error: 'Missing required fields', 
-        required: ['name', 'amount'],
-        received: { name, amount, icon, createdBy }
+        required: ['source', 'amount'],
+        received: body
       }, { status: 400 });
     }
     
-    console.log('Inserting income with data:', { name, amount, icon: icon || '💵', createdBy: createdBy || 'default-user' });
+    // Include additional fields in the database
+    const icon = '💵'; // Default icon
+    
+    console.log('Inserting income with data:', { 
+      name, 
+      amount, 
+      icon, 
+      frequency,
+      date,
+      description,
+      createdBy: createdBy || 'default-user' 
+    });
     
     const result = await db.execute(
-      sql`INSERT INTO incomes (name, amount, icon, "createdBy", "createdAt") 
-          VALUES (${name}, ${amount}, ${icon || '💵'}, ${createdBy || 'default-user'}, NOW())
+      sql`INSERT INTO incomes (name, amount, frequency, date, description, icon, "createdBy", "createdAt") 
+          VALUES (${name}, ${amount}, ${frequency || 'monthly'}, ${date || null}, ${description || null}, ${icon}, ${createdBy || 'default-user'}, NOW())
           RETURNING *`
     );
     
