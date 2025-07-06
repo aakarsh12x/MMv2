@@ -60,7 +60,4 @@ export async function setupDatabase() {
     console.error("Error setting up database:", error);
     return { success: false, error: error.message };
   }
-}
-
-// Export the setup function
-export { setupDatabase }; 
+} 
