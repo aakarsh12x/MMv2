@@ -43,7 +43,7 @@ const fallbackAiAnalytics = {
 };
 
 // Import aiAnalytics properly
-import aiAnalytics from '../../../utils/aiAnalytics';
+import aiAnalytics from '../../../../utils/aiAnalytics';
 
 function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, totalSpend }) {
   const [activeTab, setActiveTab] = useState('insights');
