@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // MongoDB connection URL
 const MONGODB_URI = process.env.MONGODB_URI;
 
