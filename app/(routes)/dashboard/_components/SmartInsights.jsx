@@ -4,7 +4,7 @@ import { TrendingUp, AlertTriangle, Target, Lightbulb, Brain, BarChart3 } from '
 import formatNumber from "@/utils";
 
 // Simple fallback if aiAnalytics fails to load
-const fallbackAiAnalytics = {
+const aiAnalytics = {
   getFinancialHealthScore: async (totalBudget, totalIncome, totalSpend) => {
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalSpend) / totalIncome) * 100 : 0;
     let score = 0;
@@ -41,9 +41,6 @@ const fallbackAiAnalytics = {
     return recommendations;
   }
 };
-
-// Import aiAnalytics properly
-import aiAnalytics from '../../../../utils/aiAnalytics';
 
 function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, totalSpend }) {
   const [activeTab, setActiveTab] = useState('insights');
@@ -200,8 +197,8 @@ function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, total
                       {financialHealth.score}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-1">Financial Health Score</h3>
-                  <p className={`font-semibold ${
+                  <h3 className="text-lg font-semibold mb-1">Financial Health Score</h3>
+                  <p className={`text-sm font-medium ${
                     financialHealth.color === 'green' ? 'text-green-600' :
                     financialHealth.color === 'blue' ? 'text-blue-600' :
                     financialHealth.color === 'yellow' ? 'text-yellow-600' :
@@ -211,53 +208,47 @@ function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, total
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Total Income</span>
-                    <span className="font-semibold">₹{formatNumber(totalIncome)}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-500">Total Income</span>
+                      <TrendingUp className="text-green-500" size={16} />
+                    </div>
+                    <div className="text-xl font-bold">₹{formatNumber(totalIncome)}</div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Total Expenses</span>
-                    <span className="font-semibold">₹{formatNumber(totalSpend)}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Budget Allocated</span>
-                    <span className="font-semibold">₹{formatNumber(totalBudget)}</span>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-500">Total Spent</span>
+                      <AlertTriangle className="text-red-500" size={16} />
+                    </div>
+                    <div className="text-xl font-bold">₹{formatNumber(totalSpend)}</div>
                   </div>
                 </div>
               </div>
             )}
 
             {activeTab === 'recommendations' && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {recommendations.length > 0 ? (
                   recommendations.map((rec, index) => (
-                    <div key={index} className={`p-4 rounded-lg border-l-4 ${
-                      rec.priority === 'high' ? 'bg-red-50 border-red-400' :
-                      rec.priority === 'medium' ? 'bg-yellow-50 border-yellow-400' :
-                      'bg-blue-50 border-blue-400'
-                    }`}>
+                    <div key={index} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <div className="flex items-start">
-                        <AlertTriangle 
-                          className={`mt-0.5 mr-2 ${
-                            rec.priority === 'high' ? 'text-red-500' :
-                            rec.priority === 'medium' ? 'text-yellow-500' :
-                            'text-blue-500'
-                          }`} 
-                          size={16} 
-                        />
-                        <div>
-                          <h4 className="font-semibold text-sm mb-1">{rec.title}</h4>
-                          <p className="text-sm text-gray-600">{rec.description}</p>
+                        <Lightbulb className="text-yellow-600 mr-3 mt-1" size={20} />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-yellow-900 mb-1">{rec.title}</h4>
+                          <p className="text-yellow-800 text-sm">{rec.description}</p>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Target className="mx-auto text-gray-400 mb-2" size={24} />
-                    <p className="text-gray-500">No specific recommendations at the moment.</p>
-                    <p className="text-gray-400 text-sm">Keep tracking your expenses for personalized advice!</p>
+                    <Target className="text-gray-400 mx-auto mb-3" size={48} />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No Recommendations Yet</h3>
+                    <p className="text-gray-500 text-sm">
+                      Add more financial data to get personalized recommendations.
+                    </p>
                   </div>
                 )}
               </div>
