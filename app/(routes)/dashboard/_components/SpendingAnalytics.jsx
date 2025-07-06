@@ -3,15 +3,22 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { TrendingUp, Calendar, Filter, PieChart as PieChartIcon } from 'lucide-react';
 
-function SpendingAnalytics({ budgetList = [] }) {
+function SpendingAnalytics({ budgetList = [], expensesList = [] }) {
   // Calculate spending by category
   const categorySpending = budgetList.reduce((acc, budget) => {
-    if (budget.totalSpend && budget.totalSpend > 0) {
+    // Calculate total spent for this budget by summing related expenses
+    const budgetExpenses = expensesList.filter(expense => 
+      expense.budgetId && expense.budgetId.toString() === budget._id.toString()
+    );
+    
+    const totalSpent = budgetExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    
+    if (totalSpent > 0) {
       acc.push({
         name: budget.name,
-        value: budget.totalSpend,
-        budget: budget.amount,
-        utilization: (budget.totalSpend / budget.amount) * 100
+        value: totalSpent,
+        budget: parseFloat(budget.amount) || 0,
+        utilization: (totalSpent / (parseFloat(budget.amount) || 1)) * 100
       });
     }
     return acc;

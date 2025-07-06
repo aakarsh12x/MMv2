@@ -9,23 +9,26 @@ import {
   YAxis,
 } from "recharts";
 
-function BarChartDashboard({ budgetList }) {
+function BarChartDashboard({ budgetList, expensesList = [] }) {
   // Ensure data is properly formatted for the chart
   const formattedData = budgetList?.map(budget => {
     // Convert string amounts to numbers and handle null/undefined values
     const amount = typeof budget.amount === 'number' 
       ? budget.amount 
       : parseFloat(budget.amount || 0);
-      
-    const totalSpend = typeof budget.totalSpend === 'number'
-      ? budget.totalSpend
-      : parseFloat(budget.totalSpend || 0);
+    
+    // Calculate total spent for this budget by summing related expenses
+    const budgetExpenses = expensesList.filter(expense => 
+      expense.budgetId && expense.budgetId.toString() === budget._id.toString()
+    );
+    
+    const totalSpend = budgetExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
       
     return {
       ...budget,
       name: budget.name || 'Unnamed',
       amount: isNaN(amount) ? 0 : amount,
-      totalSpend: isNaN(totalSpend) ? 0 : totalSpend,
+      totalSpend: totalSpend,
       // Add a formatted percentage for tooltip
       percentUsed: `${Math.min(100, ((totalSpend / amount) * 100) || 0).toFixed(0)}%`
     };
