@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 
 // MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://aakarshshrey12:2KqzcQbZAyZh8oDV@mongocluster.hv68hsv.mongodb.net/?retryWrites=true&w=majority&appName=MongoCluster";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // Connect to MongoDB
 async function connectDB() {

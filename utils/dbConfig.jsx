@@ -45,7 +45,7 @@ if (typeof window === 'undefined') {
   const mongoose = require('mongoose');
 
   // MongoDB connection URL
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://aakarshshrey12:2KqzcQbZAyZh8oDV@mongocluster.hv68hsv.mongodb.net/?retryWrites=true&w=majority&appName=MongoCluster";
+  const MONGODB_URI = process.env.MONGODB_URI;
 
   if (!MONGODB_URI) {
     console.error("ERROR: MONGODB_URI is not defined in environment variables");
