@@ -31,11 +31,11 @@ function CardInfo({ budgetList, incomeList, isLoading }) {
         setAdviceLoading(true);
         try {
           const advice = await getFinancialAdvice(
-            totalBudget,
-            totalIncome,
-            totalSpend
+            budgetList || [],
+            incomeList || [],
+            [] // expenseData - we'll add this later
           );
-          setFinancialAdvice(advice);
+          setFinancialAdvice(advice?.advice || "No financial advice available.");
         } catch (error) {
           console.error("Error fetching financial advice:", error);
           setFinancialAdvice("Unable to generate financial advice at the moment.");
@@ -46,7 +46,7 @@ function CardInfo({ budgetList, incomeList, isLoading }) {
 
       fetchFinancialAdvice();
     }
-  }, [totalBudget, totalIncome, totalSpend]);
+  }, [totalBudget, totalIncome, totalSpend, budgetList, incomeList]);
 
   const calculateCardInfo = () => {
     let totalBudget_ = 0;

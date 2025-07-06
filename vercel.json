@@ -2,13 +2,10 @@
   "version": 2,
   "builds": [
     {
-      "src": "next.config.mjs",
+      "src": "package.json",
       "use": "@vercel/next"
     }
   ],
-  "env": {
-    "MONGODB_URI": "mongodb+srv://aakarshshrey12:your_actual_password@mongocluster.hv68hsv.mongodb.net/?retryWrites=true&w=majority&appName=MongoCluster"
-  },
   "routes": [
     {
       "src": "/(.*)",
