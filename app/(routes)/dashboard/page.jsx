@@ -34,22 +34,32 @@ function Dashboard() {
    */
   const getBudgetList = async () => {
     try {
+      console.log('Fetching budgets...');
       // Get budgets for the default user
       const budgetResponse = await fetch(`/api/budgets?createdBy=default-user`);
-      if (!budgetResponse.ok) throw new Error('Failed to fetch budgets');
+      if (!budgetResponse.ok) {
+        console.error('Budget response not ok:', budgetResponse.status);
+        throw new Error('Failed to fetch budgets');
+      }
       const budgets = await budgetResponse.json();
+      console.log('Budgets fetched:', budgets);
 
       // Get expenses for the default user
       const expenseResponse = await fetch(`/api/expenses?createdBy=default-user`);
-      if (!expenseResponse.ok) throw new Error('Failed to fetch expenses');
+      if (!expenseResponse.ok) {
+        console.error('Expense response not ok:', expenseResponse.status);
+        throw new Error('Failed to fetch expenses');
+      }
       const allExpenses = await expenseResponse.json();
+      console.log('Expenses fetched:', allExpenses);
 
       // Calculate expenses for each budget
       const budgetsWithExpenses = budgets.map(budget => {
         const budgetExpenses = allExpenses.filter(expense => {
-          // Handle populated budgetId object
-          const expenseBudgetId = expense.budgetId?._id || expense.budgetId;
-          return expenseBudgetId === budget._id;
+          // Handle both PostgreSQL 'id' and MongoDB '_id' for compatibility
+          const expenseBudgetId = expense.budgetId?.id || expense.budgetId?.id || expense.budgetId;
+          const budgetId = budget.id || budget._id;
+          return expenseBudgetId === budgetId;
         });
         
         const totalSpend = budgetExpenses.reduce((sum, expense) => {
@@ -70,6 +80,9 @@ function Dashboard() {
       getIncomeList();
     } catch (error) {
       console.error("Error fetching budget list:", error);
+      // Set empty arrays to prevent further errors
+      setBudgetList([]);
+      setExpensesList([]);
     } finally {
       setIsLoading(false);
     }
@@ -80,10 +93,15 @@ function Dashboard() {
    */
   const getIncomeList = async () => {
     try {
+      console.log('Fetching incomes...');
       // Get incomes for the default user
       const response = await fetch(`/api/incomes?createdBy=default-user`);
-      if (!response.ok) throw new Error('Failed to fetch incomes');
+      if (!response.ok) {
+        console.error('Income response not ok:', response.status);
+        throw new Error('Failed to fetch incomes');
+      }
       const incomes = await response.json();
+      console.log('Incomes fetched:', incomes);
 
       // Calculate total amount for each income
       const incomesWithTotals = incomes.map(income => ({
@@ -94,6 +112,8 @@ function Dashboard() {
       setIncomeList(incomesWithTotals);
     } catch (error) {
       console.error("Error fetching income list:", error);
+      // Set empty array to prevent further errors
+      setIncomeList([]);
     }
   };
 
@@ -106,16 +126,16 @@ function Dashboard() {
 
   // Don't render until mounted to prevent hydration issues
   if (!mounted) {
-  return (
+    return (
       <div className="p-6 space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Welcome to MoneyMap! 👋
-        </h1>
+            </h1>
             <p className="text-gray-600 mt-1">
               Loading your financial overview...
-        </p>
+            </p>
           </div>
         </div>
       </div>
@@ -133,7 +153,7 @@ function Dashboard() {
           <p className="text-gray-600 mt-1">
             Here's your financial overview for today
           </p>
-            </div>
+        </div>
         <div className="flex items-center space-x-3">
           <div className="text-right">
             <p className="text-sm text-gray-500">Today</p>
@@ -172,7 +192,7 @@ function Dashboard() {
           
           {/* Recent Transactions */}
           <RecentTransactions 
-              expensesList={expensesList}
+            expensesList={expensesList}
             incomeList={incomeList}
           />
 

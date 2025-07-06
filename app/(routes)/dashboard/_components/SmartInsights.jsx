@@ -93,8 +93,9 @@ function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, total
       } else {
         setAdvice("You're spending more than you earn. Focus on reducing expenses and consider additional income sources.");
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const tabs = [
