@@ -47,11 +47,7 @@ export async function GET(request) {
     await connectDB();
     
     const { searchParams } = new URL(request.url);
-    const createdBy = searchParams.get('createdBy');
-    
-    if (!createdBy) {
-      return NextResponse.json({ error: 'createdBy parameter is required' }, { status: 400 });
-    }
+    const createdBy = searchParams.get('createdBy') || 'default-user';
     
     const expenses = await Expense.find({ createdBy }).populate('budgetId').sort({ createdAt: -1 });
     
@@ -69,7 +65,7 @@ export async function POST(request) {
     const body = await request.json();
     const { name, amount, budgetId, createdBy } = body;
     
-    if (!name || !amount || !createdBy) {
+    if (!name || !amount) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
@@ -77,7 +73,7 @@ export async function POST(request) {
       name,
       amount: parseFloat(amount),
       budgetId,
-      createdBy,
+      createdBy: createdBy || 'default-user',
       createdAt: new Date().toISOString()
     });
     

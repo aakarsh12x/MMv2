@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { 
   Search, 
@@ -21,7 +20,6 @@ import {
 import NotificationDropdown from './NotificationDropdown';
 
 function Header() {
-  const { user, isSignedIn } = useUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -72,75 +70,48 @@ function Header() {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
-      {isSignedIn ? (
-              <>
-                {/* Search Button */}
-                <button
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Search size={20} />
-                </button>
+            {/* Search Button */}
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Search size={20} />
+            </button>
 
-                {/* Quick Add Dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <Plus size={18} />
-                    <span className="hidden sm:block text-sm font-medium">Add</span>
-                  </button>
-                  
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="p-2">
-                      {quickActions.map((action) => (
-                        <Link
-                          key={action.name}
-                          href={action.href}
-                          className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                        >
-                          <div className={`w-2 h-2 rounded-full ${action.color}`}></div>
-                          <span className="text-sm">{action.name}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+            {/* Quick Add Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Plus size={18} />
+                <span className="hidden sm:block text-sm font-medium">Add</span>
+              </button>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="p-2">
+                  {quickActions.map((action) => (
+                    <Link
+                      key={action.name}
+                      href={action.href}
+                      className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <div className={`w-2 h-2 rounded-full ${action.color}`}></div>
+                      <span className="text-sm">{action.name}</span>
+                    </Link>
+                  ))}
                 </div>
-
-                {/* Notifications */}
-                <NotificationDropdown />
-
-                {/* Settings (Desktop only) */}
-                <Link 
-                  href="/dashboard/settings" 
-                  className="hidden md:block p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Settings size={20} />
-                </Link>
-
-                {/* User Profile */}
-                <UserButton 
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-8 h-8 rounded-lg",
-                    }
-                  }}
-                />
-              </>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <Link href="/sign-in">
-                  <Button variant="ghost" className="text-gray-600 hover:text-blue-600">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/sign-up">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Get Started
-                  </Button>
-          </Link>
               </div>
-            )}
+            </div>
+
+            {/* Notifications */}
+            <NotificationDropdown />
+
+            {/* Settings (Desktop only) */}
+            <Link 
+              href="/dashboard/settings" 
+              className="hidden md:block p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Settings size={20} />
+            </Link>
 
             {/* Mobile Menu Button */}
             <button
@@ -190,24 +161,22 @@ function Header() {
               </div>
 
               {/* Mobile Quick Actions */}
-              {isSignedIn && (
-                <div className="border-t border-gray-200 pt-4">
-                  <p className="text-sm font-medium text-gray-500 mb-2">Quick Actions</p>
-                  <div className="space-y-2">
-                    {quickActions.map((action) => (
-                      <Link
-                        key={action.name}
-                        href={action.href}
-                        className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${action.color}`}></div>
-                        <span>{action.name}</span>
-                      </Link>
-                    ))}
-                  </div>
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-sm font-medium text-gray-500 mb-2">Quick Actions</p>
+                <div className="space-y-2">
+                  {quickActions.map((action) => (
+                    <Link
+                      key={action.name}
+                      href={action.href}
+                      className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${action.color}`}></div>
+                      <span>{action.name}</span>
+                    </Link>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
         </div>
       )}

@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { UserButton, useUser } from "@clerk/nextjs";
 import CardInfo from "./_components/CardInfo";
 import BarChartDashboard from "./_components/BarChartDashboard";
 import SmartInsights from "./_components/SmartInsights";
@@ -11,7 +10,6 @@ import QuickActions from "./_components/QuickActions";
 import SpendingAnalytics from "./_components/SpendingAnalytics";
 
 function Dashboard() {
-  const { user } = useUser();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [budgetList, setBudgetList] = useState([]);
@@ -28,23 +26,21 @@ function Dashboard() {
   
   useEffect(() => {
     setMounted(true);
-    if (user) {
-      getBudgetList();
-    }
-  }, [user]);
+    getBudgetList();
+  }, []);
   
   /**
    * Get Budget list
    */
   const getBudgetList = async () => {
     try {
-      // Get budgets for the current user
-      const budgetResponse = await fetch(`/api/budgets?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
+      // Get budgets for the default user
+      const budgetResponse = await fetch(`/api/budgets?createdBy=default-user`);
       if (!budgetResponse.ok) throw new Error('Failed to fetch budgets');
       const budgets = await budgetResponse.json();
 
-      // Get expenses for the current user
-      const expenseResponse = await fetch(`/api/expenses?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
+      // Get expenses for the default user
+      const expenseResponse = await fetch(`/api/expenses?createdBy=default-user`);
       if (!expenseResponse.ok) throw new Error('Failed to fetch expenses');
       const allExpenses = await expenseResponse.json();
 
@@ -84,8 +80,8 @@ function Dashboard() {
    */
   const getIncomeList = async () => {
     try {
-      // Get incomes for the current user
-      const response = await fetch(`/api/incomes?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
+      // Get incomes for the default user
+      const response = await fetch(`/api/incomes?createdBy=default-user`);
       if (!response.ok) throw new Error('Failed to fetch incomes');
       const incomes = await response.json();
 
@@ -132,7 +128,7 @@ function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.fullName || 'User'}! 👋
+            Welcome to MoneyMap! 👋
           </h1>
           <p className="text-gray-600 mt-1">
             Here's your financial overview for today

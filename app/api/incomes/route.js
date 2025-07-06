@@ -46,11 +46,7 @@ export async function GET(request) {
     await connectDB();
     
     const { searchParams } = new URL(request.url);
-    const createdBy = searchParams.get('createdBy');
-    
-    if (!createdBy) {
-      return NextResponse.json({ error: 'createdBy parameter is required' }, { status: 400 });
-    }
+    const createdBy = searchParams.get('createdBy') || 'default-user';
     
     const incomes = await Income.find({ createdBy }).sort({ createdAt: -1 });
     
@@ -68,7 +64,7 @@ export async function POST(request) {
     const body = await request.json();
     const { name, amount, icon, createdBy } = body;
     
-    if (!name || !amount || !createdBy) {
+    if (!name || !amount) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
@@ -76,7 +72,7 @@ export async function POST(request) {
       name,
       amount: parseFloat(amount),
       icon: icon || '💵',
-      createdBy
+      createdBy: createdBy || 'default-user'
     });
     
     const savedIncome = await income.save();

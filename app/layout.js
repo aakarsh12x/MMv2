@@ -1,6 +1,5 @@
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 
 const outfit = Outfit({ subsets: ["latin"] });
@@ -11,16 +10,12 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const publishableKey = "pk_test_ZGFzaGluZy15YWstODUuY2xlcmsuYWNjb3VudHMuZGV2JA";
-
   return (
-    <ClerkProvider publishableKey={publishableKey}>
-      <html lang="en">
-        <body className={outfit.className}>
-          <Toaster />
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={outfit.className}>
+        <Toaster />
+        {children}
+      </body>
+    </html>
   );
 }
