@@ -12,8 +12,8 @@ if (!DATABASE_URL) {
 }
 
 // Create the database connection
-const sql = neon(DATABASE_URL);
-const db = drizzle(sql);
+const sqlClient = neon(DATABASE_URL);
+const db = drizzle(sqlClient);
 
 export async function DELETE(request, { params }) {
   try {
