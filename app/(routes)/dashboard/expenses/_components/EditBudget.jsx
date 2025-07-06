@@ -80,31 +80,31 @@ export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
           >
             <X className="h-4 w-4" />
           </Button>
-        </div>
+                </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">Budget Name</Label>
-            <Input
+                  <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="e.g., Groceries, Entertainment"
               required
-            />
-          </div>
+                  />
+                </div>
 
           <div>
             <Label htmlFor="amount">Budget Amount (₹)</Label>
-            <Input
+                  <Input
               id="amount"
-              type="number"
+                    type="number"
               value={formData.amount}
               onChange={(e) => handleChange("amount", e.target.value)}
               placeholder="0.00"
               required
-            />
-          </div>
+                  />
+                </div>
 
           <div>
             <Label htmlFor="category">Category</Label>
@@ -138,7 +138,7 @@ export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
               placeholder="Additional details about this budget"
               rows={3}
             />
-          </div>
+              </div>
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -155,14 +155,14 @@ export default function EditBudget({ budget, isOpen, onClose, onSuccess }) {
                 </>
               )}
             </Button>
-            <Button
+              <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
             >
               Cancel
-            </Button>
+              </Button>
           </div>
         </form>
       </div>

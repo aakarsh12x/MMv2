@@ -95,30 +95,30 @@ export default function AddExpensePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+              <div>
               <Label htmlFor="title">Expense Title</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleChange("title", e.target.value)}
                 placeholder="e.g., Grocery shopping"
-                required
-              />
-            </div>
+                  required
+                />
+              </div>
 
-            <div>
+              <div>
               <Label htmlFor="amount">Amount (₹)</Label>
               <Input
                 id="amount"
-                type="number"
-                value={formData.amount}
+                  type="number"
+                  value={formData.amount}
                 onChange={(e) => handleChange("amount", e.target.value)}
-                placeholder="0.00"
-                required
-              />
-            </div>
+                  placeholder="0.00"
+                  required
+                />
+              </div>
 
-            <div>
+              <div>
               <Label htmlFor="category">Category</Label>
               <Select
                 value={formData.category}
@@ -144,7 +144,7 @@ export default function AddExpensePage() {
             <div>
               <Label htmlFor="budgetId">Budget (Optional)</Label>
               <Select
-                value={formData.budgetId}
+                  value={formData.budgetId}
                 onValueChange={(value) => handleChange("budgetId", value)}
               >
                 <SelectTrigger>
@@ -170,9 +170,9 @@ export default function AddExpensePage() {
                 onChange={(e) => handleChange("date", e.target.value)}
                 required
               />
-            </div>
+              </div>
 
-            <div>
+              <div>
               <Label htmlFor="description">Description (Optional)</Label>
               <Textarea
                 id="description"
@@ -180,12 +180,12 @@ export default function AddExpensePage() {
                 onChange={(e) => handleChange("description", e.target.value)}
                 placeholder="Additional details about this expense"
                 rows={3}
-              />
-            </div>
+                />
+              </div>
 
             <div className="flex gap-3 pt-4">
               <Button
-                type="submit"
+                  type="submit"
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >
@@ -212,4 +212,4 @@ export default function AddExpensePage() {
       </Card>
     </div>
   );
-} 
+}

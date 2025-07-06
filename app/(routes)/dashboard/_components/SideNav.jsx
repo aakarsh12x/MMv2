@@ -8,8 +8,8 @@ import {
   TrendingUp,
   TrendingDownIcon,
   Database,
+  User,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
@@ -100,7 +100,9 @@ function SideNav() {
         className="fixed bottom-10 p-5 flex gap-2
             items-center"
       >
-        <UserButton />
+        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <User className="w-4 h-4 text-gray-600" />
+        </div>
         <span className="text-gray-600">Profile</span>
       </div>
     </div>

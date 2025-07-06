@@ -1,5 +1,5 @@
-import { UserButton } from '@clerk/nextjs'
 import React from 'react'
+import { User } from 'lucide-react'
 
 function DashboardHeader() {
   return (
@@ -8,7 +8,9 @@ function DashboardHeader() {
           
         </div>
         <div>
-            <UserButton afterSignOutUrl='/'/>
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-gray-600" />
+            </div>
         </div>
        
     </div>

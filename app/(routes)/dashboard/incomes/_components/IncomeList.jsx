@@ -99,8 +99,8 @@ export default function IncomeList() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+      </div>
       )}
 
       <CreateIncomes

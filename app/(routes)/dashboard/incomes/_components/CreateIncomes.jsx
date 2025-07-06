@@ -100,8 +100,8 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
               onChange={(e) => handleChange("amount", e.target.value)}
               placeholder="0.00"
               required
-            />
-          </div>
+                  />
+                </div>
 
           <div>
             <Label htmlFor="frequency">Frequency</Label>
@@ -123,14 +123,14 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
 
           <div>
             <Label htmlFor="date">Date</Label>
-            <Input
+                  <Input
               id="date"
               type="date"
               value={formData.date}
               onChange={(e) => handleChange("date", e.target.value)}
               required
-            />
-          </div>
+                  />
+                </div>
 
           <div>
             <Label htmlFor="description">Description (Optional)</Label>
@@ -140,8 +140,8 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="Additional details about this income source"
               rows={3}
-            />
-          </div>
+                  />
+                </div>
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -158,14 +158,14 @@ export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
                 </>
               )}
             </Button>
-            <Button
+              <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
             >
               Cancel
-            </Button>
+              </Button>
           </div>
         </form>
       </div>
