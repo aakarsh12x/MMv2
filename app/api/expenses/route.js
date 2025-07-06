@@ -1,57 +1,34 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 
-// MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database URL
+const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
 
-// Connect to MongoDB
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-  }
+if (!DATABASE_URL) {
+  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
+  throw new Error("Database connection failed: Missing database URL");
 }
 
-// Expense Schema
-const expenseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  budgetId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Budget'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: String,
-    required: true
-  }
-});
-
-const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
+// Create the database connection
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
 
 export async function GET(request) {
   try {
-    await connectDB();
-    
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy') || 'default-user';
     
-    const expenses = await Expense.find({ createdBy }).populate('budgetId').sort({ createdAt: -1 });
+    const expenses = await db.execute(
+      sql`SELECT e.*, b.name as budget_name, b.icon as budget_icon 
+          FROM expenses e 
+          LEFT JOIN budgets b ON e."budgetId" = b.id 
+          WHERE e."createdBy" = ${createdBy} 
+          ORDER BY e."createdAt" DESC`
+    );
     
-    return NextResponse.json(expenses);
+    return NextResponse.json(expenses.rows);
   } catch (error) {
     console.error('Error fetching expenses:', error);
     return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 });
@@ -60,8 +37,6 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    await connectDB();
-    
     const body = await request.json();
     const { name, amount, budgetId, createdBy } = body;
     
@@ -69,17 +44,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const expense = new Expense({
-      name,
-      amount: parseFloat(amount),
-      budgetId,
-      createdBy: createdBy || 'default-user',
-      createdAt: new Date().toISOString()
-    });
+    const result = await db.execute(
+      sql`INSERT INTO expenses (name, amount, "budgetId", "createdBy", "createdAt") 
+          VALUES (${name}, ${amount}, ${budgetId || null}, ${createdBy || 'default-user'}, NOW())
+          RETURNING *`
+    );
     
-    const savedExpense = await expense.save();
-    
-    return NextResponse.json(savedExpense, { status: 201 });
+    return NextResponse.json(result.rows[0], { status: 201 });
   } catch (error) {
     console.error('Error creating expense:', error);
     return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });

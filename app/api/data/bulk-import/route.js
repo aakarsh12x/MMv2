@@ -1,103 +1,22 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 
-// MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database URL
+const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
 
-// Connect to MongoDB
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-  }
+if (!DATABASE_URL) {
+  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
+  throw new Error("Database connection failed: Missing database URL");
 }
 
-// Budget Schema
-const budgetSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💰'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Income Schema
-const incomeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💵'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Expense Schema
-const expenseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  budgetId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Budget'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: String,
-    required: true
-  }
-});
-
-const Budget = mongoose.models.Budget || mongoose.model('Budget', budgetSchema);
-const Income = mongoose.models.Income || mongoose.model('Income', incomeSchema);
-const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
+// Create the database connection
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
 
 export async function POST(request) {
   try {
-    await connectDB();
-    
     const body = await request.json();
     const { budgets, expenses, incomes, createdBy } = body;
     
@@ -114,43 +33,36 @@ export async function POST(request) {
     // Import budgets
     if (budgets && budgets.length > 0) {
       for (const budget of budgets) {
-        const newBudget = new Budget({
-          name: budget.name,
-          amount: budget.amount,
-          icon: budget.icon || '💰',
-          createdBy
-        });
-        const savedBudget = await newBudget.save();
-        results.budgets.push(savedBudget);
+        const result = await db.execute(
+          sql`INSERT INTO budgets (name, amount, icon, "createdBy", "createdAt") 
+              VALUES (${budget.name}, ${budget.amount}, ${budget.icon || '💰'}, ${createdBy}, NOW())
+              RETURNING *`
+        );
+        results.budgets.push(result.rows[0]);
       }
     }
     
     // Import incomes
     if (incomes && incomes.length > 0) {
       for (const income of incomes) {
-        const newIncome = new Income({
-          name: income.name,
-          amount: income.amount,
-          icon: income.icon || '💵',
-          createdBy
-        });
-        const savedIncome = await newIncome.save();
-        results.incomes.push(savedIncome);
+        const result = await db.execute(
+          sql`INSERT INTO incomes (name, amount, icon, "createdBy", "createdAt") 
+              VALUES (${income.name}, ${income.amount}, ${income.icon || '💵'}, ${createdBy}, NOW())
+              RETURNING *`
+        );
+        results.incomes.push(result.rows[0]);
       }
     }
     
     // Import expenses
     if (expenses && expenses.length > 0) {
       for (const expense of expenses) {
-        const newExpense = new Expense({
-          name: expense.name,
-          amount: expense.amount,
-          budgetId: expense.budgetId,
-          createdBy,
-          createdAt: expense.createdAt || new Date().toISOString()
-        });
-        const savedExpense = await newExpense.save();
-        results.expenses.push(savedExpense);
+        const result = await db.execute(
+          sql`INSERT INTO expenses (name, amount, "budgetId", "createdBy", "createdAt") 
+              VALUES (${expense.name}, ${expense.amount}, ${expense.budgetId || null}, ${createdBy}, NOW())
+              RETURNING *`
+        );
+        results.expenses.push(result.rows[0]);
       }
     }
     

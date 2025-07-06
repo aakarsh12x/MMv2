@@ -1,50 +1,22 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 
-// MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database URL
+const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
 
-// Connect to MongoDB
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-  }
+if (!DATABASE_URL) {
+  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
+  throw new Error("Database connection failed: Missing database URL");
 }
 
-// Budget Schema
-const budgetSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💰'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Budget = mongoose.models.Budget || mongoose.model('Budget', budgetSchema);
+// Create the database connection
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
 
 export async function PUT(request, { params }) {
   try {
-    await connectDB();
-    
     const { id } = params;
     const body = await request.json();
     const { name, amount, icon } = body;
@@ -53,21 +25,15 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    const updatedBudget = await Budget.findByIdAndUpdate(
-      id,
-      {
-        name,
-        amount,
-        icon: icon || '💰'
-      },
-      { new: true }
+    const result = await db.execute(
+      sql`UPDATE budgets SET name = ${name}, amount = ${amount}, icon = ${icon || '💰'} WHERE id = ${id} RETURNING *`
     );
     
-    if (!updatedBudget) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 });
     }
     
-    return NextResponse.json(updatedBudget);
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating budget:', error);
     return NextResponse.json({ error: 'Failed to update budget' }, { status: 500 });
@@ -76,13 +42,13 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    
     const { id } = params;
     
-    const deletedBudget = await Budget.findByIdAndDelete(id);
+    const result = await db.execute(
+      sql`DELETE FROM budgets WHERE id = ${id} RETURNING *`
+    );
     
-    if (!deletedBudget) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 });
     }
     

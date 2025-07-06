@@ -1,56 +1,29 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 
-// MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database URL
+const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
 
-// Connect to MongoDB
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-  }
+if (!DATABASE_URL) {
+  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
+  throw new Error("Database connection failed: Missing database URL");
 }
 
-// Expense Schema
-const expenseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  budgetId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Budget'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: String,
-    required: true
-  }
-});
-
-const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
+// Create the database connection
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
 
 export async function DELETE(request, { params }) {
   try {
-    await connectDB();
-    
     const { id } = params;
     
-    const deletedExpense = await Expense.findByIdAndDelete(id);
+    const result = await db.execute(
+      sql`DELETE FROM expenses WHERE id = ${id} RETURNING *`
+    );
     
-    if (!deletedExpense) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
     }
     

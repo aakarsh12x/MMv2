@@ -1,106 +1,25 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { sql } from "drizzle-orm";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-// MongoDB connection URL
-const MONGODB_URI = process.env.MONGODB_URI;
+// Database URL
+const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
 
-// Connect to MongoDB
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-  }
+if (!DATABASE_URL) {
+  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
+  throw new Error("Database connection failed: Missing database URL");
 }
 
-// Budget Schema
-const budgetSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💰'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Income Schema
-const incomeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: String,
-    required: true
-  },
-  icon: {
-    type: String,
-    default: '💵'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Expense Schema
-const expenseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  amount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  budgetId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Budget'
-  },
-  createdBy: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: String,
-    required: true
-  }
-});
-
-const Budget = mongoose.models.Budget || mongoose.model('Budget', budgetSchema);
-const Income = mongoose.models.Income || mongoose.model('Income', incomeSchema);
-const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSchema);
+// Create the database connection
+const sql = neon(DATABASE_URL);
+const db = drizzle(sql);
 
 export async function GET(request) {
   try {
-    await connectDB();
-    
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy');
     
@@ -110,18 +29,18 @@ export async function GET(request) {
     
     // Fetch all data for the user
     const [budgets, expenses, incomes] = await Promise.all([
-      Budget.find({ createdBy }).sort({ createdAt: -1 }),
-      Expense.find({ createdBy }).populate('budgetId').sort({ createdAt: -1 }),
-      Income.find({ createdBy }).sort({ createdAt: -1 })
+      db.execute(sql`SELECT * FROM budgets WHERE "createdBy" = ${createdBy} ORDER BY "createdAt" DESC`),
+      db.execute(sql`SELECT e.*, b.name as budget_name FROM expenses e LEFT JOIN budgets b ON e."budgetId" = b.id WHERE e."createdBy" = ${createdBy} ORDER BY e."createdAt" DESC`),
+      db.execute(sql`SELECT * FROM incomes WHERE "createdBy" = ${createdBy} ORDER BY "createdAt" DESC`)
     ]);
     
     const exportData = {
       exportDate: new Date().toISOString(),
       user: createdBy,
       data: {
-        budgets,
-        expenses,
-        incomes
+        budgets: budgets.rows,
+        expenses: expenses.rows,
+        incomes: incomes.rows
       }
     };
     
