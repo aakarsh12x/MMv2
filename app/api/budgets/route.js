@@ -1,74 +1,38 @@
 import { NextResponse } from 'next/server';
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { sql } from "drizzle-orm";
-
-// Database URL
-const DATABASE_URL = process.env.NEXT_PUBLIC_DATABASE_URL;
-
-if (!DATABASE_URL) {
-  console.error("ERROR: NEXT_PUBLIC_DATABASE_URL is not defined in environment variables");
-  throw new Error("Database connection failed: Missing database URL");
-}
-
-// Create the database connection
-const sqlClient = neon(DATABASE_URL);
-const db = drizzle(sqlClient);
+import mongoose from 'mongoose';
+import { Budget } from '@/utils/mongoSchemas';
 
 // Force dynamic to ensure the API route is not statically optimized
 export const dynamic = 'force-dynamic';
 
-// Function to ensure the budgets table has all required columns
-async function ensureBudgetsTable() {
+// MongoDB connection
+const connectDB = async () => {
   try {
-    // Check if the budgets table exists and has required columns
-    const columns = await db.execute(sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' AND table_name = 'budgets'
-    `);
-    
-    const columnNames = columns.rows.map(col => col.column_name);
-    const requiredColumns = ['name', 'amount', 'icon', 'createdBy'];
-    const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
-    
-    if (missingColumns.length > 0) {
-      console.log('Adding missing columns to budgets table:', missingColumns);
-      
-      // Add missing columns
-      for (const column of missingColumns) {
-        if (column === 'name') {
-          await db.execute(sql`ALTER TABLE budgets ADD COLUMN IF NOT EXISTS name VARCHAR NOT NULL DEFAULT ''`);
-        } else if (column === 'amount') {
-          await db.execute(sql`ALTER TABLE budgets ADD COLUMN IF NOT EXISTS amount VARCHAR NOT NULL DEFAULT '0'`);
-        } else if (column === 'icon') {
-          await db.execute(sql`ALTER TABLE budgets ADD COLUMN IF NOT EXISTS icon VARCHAR`);
-        } else if (column === 'createdBy') {
-          await db.execute(sql`ALTER TABLE budgets ADD COLUMN IF NOT EXISTS "createdBy" VARCHAR NOT NULL DEFAULT 'default-user'`);
-        }
-      }
-      
-      console.log('Successfully added missing columns to budgets table');
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(process.env.MONGODB_URI);
+      console.log('MongoDB connected');
     }
   } catch (error) {
-    console.error('Error ensuring budgets table structure:', error);
+    console.error('MongoDB connection error:', error);
     throw error;
   }
-}
+};
 
 export async function GET(request) {
   try {
+    await connectDB();
+    
     const { searchParams } = new URL(request.url);
     const createdBy = searchParams.get('createdBy') || 'default-user';
     
-    // Ensure table structure
-    await ensureBudgetsTable();
+    console.log('Fetching budgets for:', createdBy);
     
-    const budgets = await db.execute(sql`
-      SELECT * FROM budgets WHERE "createdBy" = ${createdBy} ORDER BY "createdAt" DESC
-    `);
+    const budgets = await Budget.find({ createdBy })
+      .sort({ createdAt: -1 })
+      .lean();
     
-    return NextResponse.json(budgets.rows);
+    console.log('Budgets fetched:', budgets.length);
+    return NextResponse.json(budgets);
   } catch (error) {
     console.error('Error fetching budgets:', error);
     return NextResponse.json({ 
@@ -80,11 +44,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    await connectDB();
+    
     const body = await request.json();
     console.log('Received budget data:', body);
-    
-    // Ensure table structure
-    await ensureBudgetsTable();
     
     const { name, amount, icon, createdBy } = body;
     
@@ -101,16 +64,13 @@ export async function POST(request) {
       createdBy: createdBy || 'default-user'
     };
     
-    console.log('Inserting budget with data:', budgetData);
+    console.log('Creating budget with data:', budgetData);
     
-    const result = await db.execute(sql`
-      INSERT INTO budgets (name, amount, icon, "createdBy")
-      VALUES (${budgetData.name}, ${budgetData.amount}, ${budgetData.icon}, ${budgetData.createdBy})
-      RETURNING *
-    `);
+    const budget = new Budget(budgetData);
+    const savedBudget = await budget.save();
     
-    console.log('Budget created successfully:', result.rows[0]);
-    return NextResponse.json(result.rows[0]);
+    console.log('Budget created successfully:', savedBudget);
+    return NextResponse.json(savedBudget);
   } catch (error) {
     console.error('Error creating budget:', error);
     return NextResponse.json({ 

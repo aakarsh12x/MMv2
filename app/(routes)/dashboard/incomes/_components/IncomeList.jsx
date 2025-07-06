@@ -34,7 +34,7 @@ export default function IncomeList() {
         method: 'DELETE',
       });
       if (response.ok) {
-        setIncomes(incomes.filter(income => income.id !== id));
+        setIncomes(incomes.filter(income => income._id !== id));
       }
     } catch (error) {
       console.error('Error deleting income:', error);
@@ -72,7 +72,7 @@ export default function IncomeList() {
       ) : (
         <div className="grid gap-4">
           {incomes.map((income) => (
-            <Card key={income.id} className="hover:shadow-md transition-shadow">
+            <Card key={income._id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -90,7 +90,7 @@ export default function IncomeList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(income.id)}
+                      onClick={() => handleDelete(income._id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />

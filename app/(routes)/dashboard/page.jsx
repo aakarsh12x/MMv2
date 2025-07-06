@@ -56,9 +56,9 @@ function Dashboard() {
       // Calculate expenses for each budget
       const budgetsWithExpenses = budgets.map(budget => {
         const budgetExpenses = allExpenses.filter(expense => {
-          // Handle both PostgreSQL 'id' and MongoDB '_id' for compatibility
-          const expenseBudgetId = expense.budgetId?.id || expense.budgetId?.id || expense.budgetId;
-          const budgetId = budget.id || budget._id;
+          // Handle MongoDB _id
+          const expenseBudgetId = expense.budgetId?._id || expense.budgetId;
+          const budgetId = budget._id;
           return expenseBudgetId === budgetId;
         });
         
