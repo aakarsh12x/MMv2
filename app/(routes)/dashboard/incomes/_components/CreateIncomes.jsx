@@ -1,146 +1,174 @@
 "use client";
-import React, { useState } from "react";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import EmojiPicker from "emoji-picker-react";
+import { useState } from "react";
+import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useUser } from "@clerk/nextjs";
-import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-function CreateIncomes({ refreshData }) {
-  const [emojiIcon, setEmojiIcon] = useState("😀");
-  const [openEmojiPicker, setOpenEmojiPicker] = useState(false);
-  const [loading, setLoading] = useState(false);
+export default function CreateIncomes({ isOpen, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    source: "",
+    amount: "",
+    frequency: "monthly",
+    date: "",
+    description: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [name, setName] = useState();
-  const [amount, setAmount] = useState();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  const { user } = useUser();
-
-  /**
-   * Used to Create New Income Source
-   */
-  const onCreateIncomes = async () => {
-    if (!name || !amount) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    setLoading(true);
     try {
-      const response = await fetch('/api/incomes', {
-        method: 'POST',
+      const response = await fetch("/api/incomes", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: name,
-          amount: amount,
-          createdBy: user?.primaryEmailAddress?.emailAddress || '',
-          icon: emojiIcon,
-        })
+          ...formData,
+          createdBy: "aakarshshrey12@gmail.com",
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create income');
-      }
-
-      const result = await response.json();
-
-      if (result) {
-        refreshData();
-        toast("New Income Source Created!");
-        // Reset form
-        setName('');
-        setAmount('');
-        setEmojiIcon('😀');
+      if (response.ok) {
+        setFormData({
+          source: "",
+          amount: "",
+          frequency: "monthly",
+          date: "",
+          description: "",
+        });
+        onSuccess();
+      } else {
+        console.error("Failed to create income");
       }
     } catch (error) {
       console.error("Error creating income:", error);
-      toast.error("Failed to create income source");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-  
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div>
-      <Dialog>
-        <DialogTrigger asChild>
-          <div
-            className="bg-slate-100 p-10 rounded-2xl
-            items-center flex flex-col border-2 border-dashed
-            cursor-pointer hover:shadow-md"
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Add Income Source</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
           >
-            <h2 className="text-3xl">+</h2>
-            <h2>Create New Income Source</h2>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="source">Income Source</Label>
+            <Input
+              id="source"
+              value={formData.source}
+              onChange={(e) => handleChange("source", e.target.value)}
+              placeholder="e.g., Salary, Freelance, Investment"
+              required
+            />
           </div>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Income Source</DialogTitle>
-            <DialogDescription>
-              <div className="mt-5">
-                <Button
-                  variant="outline"
-                  className="text-lg"
-                  onClick={() => setOpenEmojiPicker(!openEmojiPicker)}
-                >
-                  {emojiIcon}
-                </Button>
-                <div className="absolute z-20">
-                  <EmojiPicker
-                    open={openEmojiPicker}
-                    onEmojiClick={(e) => {
-                      setEmojiIcon(e.emoji);
-                      setOpenEmojiPicker(false);
-                    }}
-                  />
-                </div>
-                <div className="mt-2">
-                  <h2 className="text-black font-medium my-1">Source Name</h2>
-                  <Input
-                    placeholder="e.g. Youtube"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="mt-2">
-                  <h2 className="text-black font-medium my-1">Montly Amount</h2>
-                  <Input
-                    type="number"
-                    placeholder="e.g.  ₹5000"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-start">
-            <DialogClose asChild>
-              <Button
-                disabled={!(name && amount) || loading}
-                onClick={() => onCreateIncomes()}
-                className="mt-5 w-full rounded-full"
-              >
-                {loading ? "Creating..." : "Create Income Source"}
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          <div>
+            <Label htmlFor="amount">Amount (₹)</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => handleChange("amount", e.target.value)}
+              placeholder="0.00"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="frequency">Frequency</Label>
+            <Select
+              value={formData.frequency}
+              onValueChange={(value) => handleChange("frequency", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+                <SelectItem value="one-time">One Time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleChange("date", e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange("description", e.target.value)}
+              placeholder="Additional details about this income source"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Income
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
-
-export default CreateIncomes;

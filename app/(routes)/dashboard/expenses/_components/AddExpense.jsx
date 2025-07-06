@@ -1,139 +1,220 @@
 "use client";
-import React, { useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-function AddExpense({ budgetId, refreshData }) {
+export default function AddExpense({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    name: "",
+    title: "",
     amount: "",
-    note: ""
+    category: "general",
+    date: "",
+    description: "",
+    budgetId: "",
   });
-  const [loading, setLoading] = useState(false);
-  const { user } = useUser();
+  const [budgets, setBudgets] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  useEffect(() => {
+    if (isOpen) {
+      fetchBudgets();
+    }
+  }, [isOpen]);
+
+  const fetchBudgets = async () => {
+    try {
+      const response = await fetch('/api/budgets?createdBy=aakarshshrey12@gmail.com');
+      if (response.ok) {
+        const data = await response.json();
+        setBudgets(data);
+      }
+    } catch (error) {
+      console.error('Error fetching budgets:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
-    if (!formData.name || !formData.amount) {
-      toast.error("Please fill all required fields");
-      setLoading(false);
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      const response = await fetch('/api/expenses', {
-        method: 'POST',
+      const response = await fetch("/api/expenses", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formData.name,
-          amount: parseFloat(formData.amount),
-          budgetId: budgetId,
-          createdBy: user?.primaryEmailAddress?.emailAddress || ''
-        })
+          ...formData,
+          createdBy: "aakarshshrey12@gmail.com",
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to add expense');
-      }
-
-      const result = await response.json();
-
-      if (result) {
-        toast.success("Expense added successfully!");
-        setFormData({ name: "", amount: "", note: "" });
-        if (refreshData) {
-          refreshData();
-        }
+      if (response.ok) {
+        setFormData({
+          title: "",
+          amount: "",
+          category: "general",
+          date: "",
+          description: "",
+          budgetId: "",
+        });
+        onSuccess();
+      } else {
+        console.error("Failed to create expense");
       }
     } catch (error) {
-      console.error("Error adding expense:", error);
-      toast.error("Failed to add expense");
+      console.error("Error creating expense:", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <h3 className="text-lg font-semibold mb-4">Add New Expense</h3>
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Add New Expense</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Expense Name*
-            </label>
+            <Label htmlFor="title">Expense Title</Label>
             <Input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="e.g., Groceries, Utilities"
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+              placeholder="e.g., Grocery shopping"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount*
-            </label>
-        <Input
+            <Label htmlFor="amount">Amount (₹)</Label>
+            <Input
+              id="amount"
               type="number"
-              name="amount"
               value={formData.amount}
-              onChange={handleChange}
+              onChange={(e) => handleChange("amount", e.target.value)}
               placeholder="0.00"
-              min="0.01"
-              step="0.01"
               required
-        />
-      </div>
+            />
+          </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Note (Optional)
-            </label>
-        <Input
-              type="text"
-              name="note"
-              value={formData.note}
-              onChange={handleChange}
-              placeholder="Add details about this expense..."
-        />
-      </div>
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => handleChange("category", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="food">Food & Dining</SelectItem>
+                <SelectItem value="transport">Transportation</SelectItem>
+                <SelectItem value="entertainment">Entertainment</SelectItem>
+                <SelectItem value="shopping">Shopping</SelectItem>
+                <SelectItem value="health">Health & Fitness</SelectItem>
+                <SelectItem value="education">Education</SelectItem>
+                <SelectItem value="utilities">Utilities</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
-      >
-            {loading ? (
-              "Adding..."
-            ) : (
-              <>
-                <Plus size={16} className="mr-2" />
-                Add Expense
-              </>
-            )}
-      </Button>
-        </div>
-      </form>
+          <div>
+            <Label htmlFor="budgetId">Budget (Optional)</Label>
+            <Select
+              value={formData.budgetId}
+              onValueChange={(value) => handleChange("budgetId", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a budget" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No Budget</SelectItem>
+                {budgets.map((budget) => (
+                  <SelectItem key={budget._id} value={budget._id}>
+                    {budget.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleChange("date", e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange("description", e.target.value)}
+              placeholder="Additional details about this expense"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Expense
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
-
-export default AddExpense;

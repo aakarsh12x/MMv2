@@ -1,130 +1,151 @@
 "use client";
-import { useUser } from "@clerk/nextjs";
-import React, { useEffect, useState } from "react";
-import BudgetItem from "../../budgets/_components/BudgetItem";
-import AddExpense from "../_components/AddExpense";
-import ExpenseListTable from "../_components/ExpenseListTable";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pen, PenBox, Trash } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import EditBudget from "../_components/EditBudget";
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-function ExpensesScreen({ params }) {
-  const [budgetInfo, setBudgetInfo] = useState(null);
-  const [expensesList, setExpensesList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useUser();
+export default function ExpenseDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [expense, setExpense] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      getBudgetAndExpenses();
+    if (params.id) {
+      fetchExpense();
     }
-  }, [user, params.id]);
+  }, [params.id]);
 
-  const getBudgetAndExpenses = async () => {
+  const fetchExpense = async () => {
     try {
-      // Get all budgets for the user
-      const budgetResponse = await fetch(`/api/budgets?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
-      if (!budgetResponse.ok) throw new Error('Failed to fetch budgets');
-      const budgets = await budgetResponse.json();
-      
-      // Find the specific budget
-      const budget = budgets.find(b => b._id === params.id);
-      
-      if (budget) {
-        // Get expenses for the current user
-        const expenseResponse = await fetch(`/api/expenses?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
-        if (!expenseResponse.ok) throw new Error('Failed to fetch expenses');
-        const allExpenses = await expenseResponse.json();
-        
-        // Filter expenses for this budget
-        const expenses = allExpenses.filter(expense => expense.budgetId === params.id);
-        
-        // Calculate totals
-        const totalSpend = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-        const totalItem = expenses.length;
-        
-        const budgetWithTotals = {
-          ...budget,
-          totalSpend,
-          totalItem
-        };
-        
-        setBudgetInfo(budgetWithTotals);
-        setExpensesList(expenses);
+      const response = await fetch(`/api/expenses/${params.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setExpense(data);
+      } else {
+        router.push('/dashboard/expenses');
       }
     } catch (error) {
-      console.error("Error fetching budget and expenses:", error);
+      console.error('Error fetching expense:', error);
+      router.push('/dashboard/expenses');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-  return (
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+
+    try {
+      const response = await fetch(`/api/expenses/${params.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        router.push('/dashboard/expenses');
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!expense) {
+    return (
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Link href="/dashboard/budgets">
-            <ArrowLeft className="text-gray-600 hover:text-gray-900 cursor-pointer" size={24} />
-          </Link>
-          <h2 className="text-2xl font-bold text-gray-900">My Expenses</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2"></div>
-          </div>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Expense Not Found</h1>
+          <Button onClick={() => router.push('/dashboard/expenses')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Expenses
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Link href="/dashboard/budgets">
-          <ArrowLeft className="text-gray-600 hover:text-gray-900 cursor-pointer" size={24} />
-        </Link>
-        <h2 className="text-2xl font-bold text-gray-900">My Expenses</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {budgetInfo ? (
-          <BudgetItem budget={budgetInfo} />
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2"></div>
-          </div>
-        )}
-        <AddExpense budgetId={params.id} />
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => router.push('/dashboard/expenses')}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <h1 className="text-3xl font-bold text-gray-900">Expense Details</h1>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm">
-        <div className="flex items-center justify-between p-5 border-b">
-          <h3 className="text-lg font-bold">Latest Expenses</h3>
-          {budgetInfo && <EditBudget budgetInfo={budgetInfo} />}
-        </div>
-        <ExpenseListTable
-          expensesList={expensesList}
-          refreshData={getBudgetAndExpenses} 
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl">{expense.title}</CardTitle>
+              <p className="text-gray-600 mt-1">
+                {new Date(expense.date).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleDelete}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-1">Amount</h3>
+              <p className="text-2xl font-bold text-green-600">
+                ₹{expense.amount?.toLocaleString()}
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-1">Category</h3>
+              <p className="text-gray-900 capitalize">{expense.category}</p>
+            </div>
+
+            {expense.budgetId && (
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-1">Budget</h3>
+                <p className="text-gray-900">{expense.budgetName || 'Unknown Budget'}</p>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-1">Date</h3>
+              <p className="text-gray-900">
+                {new Date(expense.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+
+          {expense.description && (
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-1">Description</h3>
+              <p className="text-gray-900">{expense.description}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-export default ExpensesScreen;
