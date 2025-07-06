@@ -42,15 +42,7 @@ const fallbackAiAnalytics = {
   }
 };
 
-let aiAnalytics = fallbackAiAnalytics;
-
-// Try to import the real aiAnalytics
-try {
-  const aiAnalyticsModule = await import('../../../utils/aiAnalytics');
-  aiAnalytics = aiAnalyticsModule.default || aiAnalyticsModule;
-} catch (error) {
-  console.log('Using fallback aiAnalytics');
-}
+const aiAnalytics = fallbackAiAnalytics;
 
 function SmartInsights({ budgetList, incomeList, totalBudget, totalIncome, totalSpend }) {
   const [activeTab, setActiveTab] = useState('insights');
