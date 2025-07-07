@@ -1,4 +1,4 @@
-# 💰 MoneyMap — AI-Powered Expense Tracker
+# 💰 MoneyMap —  Expense Tracker
 
 MoneyMap is a modern expense tracking web app built with **Next.js**, designed to simplify personal finance management with the help of **AI insights**, a **responsive UI**, and secure authentication.
 
@@ -13,7 +13,6 @@ MoneyMap is a modern expense tracking web app built with **Next.js**, designed t
 - **Frontend**: [Next.js](https://nextjs.org/), [React](https://react.dev/)
 - **UI Framework**: [shadcn/ui](https://ui.shadcn.com/), Tailwind CSS
 - **Database**: MongoDb
-- **AI Integration**: Gemeni API
 
 ## 📦 Getting Started
 
